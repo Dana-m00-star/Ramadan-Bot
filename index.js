@@ -67,7 +67,7 @@ function getRamadanDay() {
 cron.schedule("50 22 * * *", async () => {
   if (!isRamadan()) return;
   const ch = await client.channels.fetch(CHANNEL_ID);
-  ch.send("@everyone باقي 10 دقائق على تحضير اللي صلى التراويح");
+  ch.send("@everyone باقي 10 دقائق على تحضيرالتراويح");
 });
 
 // التحضير اليومي الساعة 23:00
@@ -86,7 +86,7 @@ cron.schedule("0 23 * * *", async () => {
   );
 
   const msg = await ch.send({
-    content: "@everyone تحضير اللي صلى التراويح. اضغط صلت خلال 30 دقيقة",
+    content: "@everyone تحضير اللي صلى التراويح. اضغط صليت خلال 30 دقيقة",
     components: [row]
   });
 
@@ -226,7 +226,7 @@ client.on("messageCreate", async msg => {
     if (!quizRunning) return msg.reply("لا توجد فعالية شغالة حاليًا");
 
     quizRunning = false;
-    msg.reply("تم إيقاف الفعالية مؤقتًا");
+    msg.reply("تم إيقاف الفعالية ");
   }
 });
 
