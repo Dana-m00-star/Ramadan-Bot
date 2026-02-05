@@ -19,14 +19,15 @@ const client = new Client({
 const CHANNEL_ID = process.env.CHANNEL_ID;
 const ADMIN_ID = "1406429112502976556";
 
-// تواريخ رمضان// رسالة أول يوم رمضان
-cron.schedule("0 0 18 2 *", async () => { // 18 فبراير الساعة 00:00
-  const ch = await client.channels.fetch(CHANNEL_ID);
-  ch.send("💛رمضان كريم ومبارك عليكم الشهر");
-});
-
+// تواريخ رمضان
 const RAMADAN_START = new Date("2026-02-18");
 const RAMADAN_END   = new Date("2026-03-20");
+
+// ---- رسالة أول يوم رمضان ----
+cron.schedule("0 0 18 2 *", async () => { // 18 فبراير الساعة 00:00
+  const ch = await client.channels.fetch(CHANNEL_ID);
+  ch.send("رمضان كريم ومبارك عليكم الشهر");
+});
 
 // مسارات الملفات
 const pointsPath = "./points.json";
