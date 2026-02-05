@@ -8,7 +8,6 @@ const {
 const cron = require("node-cron");
 const fs = require("fs");
 
-// ====== إعداد البوت ======
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -18,28 +17,33 @@ const client = new Client({
 });
 
 const CHANNEL_ID = process.env.CHANNEL_ID;
-const ADMIN_ID = "1406429112502976556"; // ايدي الأدمن
+const ADMIN_ID = "1406429112502976556";
 
-// ====== تواريخ رمضان ======
+// تواريخ رمضان// رسالة أول يوم رمضان
+cron.schedule("0 0 18 2 *", async () => { // 18 فبراير الساعة 00:00
+  const ch = await client.channels.fetch(CHANNEL_ID);
+  ch.send("💛رمضان كريم ومبارك عليكم الشهر");
+});
+
 const RAMADAN_START = new Date("2026-02-18");
 const RAMADAN_END   = new Date("2026-03-20");
 
-// ====== مسارات الملفات ======
-const pointsPath = "./points.json";          // نقاط الحضور
-const attendancePath = "./attendance.json";  // الحضور اليومي
-const usedQPath = "./usedQuestions.json";    // الأسئلة المستخدمة
-const dailyPointsPath = "./dailyPoints.json"; // نقاط كل فعالية يومية
-const questionsPath = "./questions.js";      // كل الأسئلة
+// مسارات الملفات
+const pointsPath = "./points.json";
+const attendancePath = "./attendance.json";
+const usedQPath = "./usedQuestions.json";
+const dailyPointsPath = "./dailyPoints.json";
+const questionsPath = "./questions.js";
 
-// ====== متغيرات تشغيل ======
+// متغيرات تشغيل
 let attendanceToday = new Set();
 let attendanceOpen = false;
 let quizRunning = false;
 
-// ====== تحميل الأسئلة ======
+// تحميل الأسئلة
 const QUESTIONS = require(questionsPath);
 
-// ====== دوال مساعدة ======
+// دوال مساعدة
 function loadJSON(path, def) {
   return fs.existsSync(path) ? JSON.parse(fs.readFileSync(path)) : def;
 }
@@ -58,14 +62,14 @@ function getRamadanDay() {
   return `${diff + 1} رمضان`;
 }
 
-// ====== تنبيه قبل التحضير 10 دقائق ======
-cron.schedule("50 22 * * *", async () => { // الساعة 22:50
+// تنبيه قبل التحضير 10 دقائق
+cron.schedule("50 22 * * *", async () => {
   if (!isRamadan()) return;
   const ch = await client.channels.fetch(CHANNEL_ID);
-  ch.send("@everyone باقي **10 دقائق** على تحضير التراويح ");
+  ch.send("@everyone باقي 10 دقائق على تحضير اللي صلى التراويح");
 });
 
-// ====== التحضير اليومي الساعة 23:00 ======
+// التحضير اليومي الساعة 23:00
 cron.schedule("0 23 * * *", async () => {
   if (!isRamadan()) return;
 
@@ -76,16 +80,15 @@ cron.schedule("0 23 * * *", async () => {
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId("attend")
-      .setLabel("صليت") // اسم الزر
+      .setLabel("صليت")
       .setStyle(ButtonStyle.Success)
   );
 
   const msg = await ch.send({
-    content: "@everyone  **تحضير اللي صلى التراويح**\nاضغط **صلت** خلال 30 دقيقة",
+    content: "@everyone تحضير اللي صلى التراويح. اضغط صلت خلال 30 دقيقة",
     components: [row]
   });
 
-  // انتهاء التحضير بعد 30 دقيقة
   setTimeout(async () => {
     attendanceOpen = false;
 
@@ -104,33 +107,33 @@ cron.schedule("0 23 * * *", async () => {
 
     await msg.edit({ components: [] });
 
-    ch.send(` **نتائج التحضير – ${getRamadanDay()}**
+    ch.send(`نتائج التحضير – ${getRamadanDay()}
 
 عدد الحاضرين: ${attendanceToday.size}
 
-👥 **الحاضرين:**
-${mentions.join("\n") || "—"}
+الحاضرين:
+${mentions.join("\n") || "-"}
 
-+1 نقطة لكل حاضر `);
++1 نقطة لكل حاضر`);
   }, 30 * 60 * 1000);
 });
 
-// ====== زر الحضور ======
+// زر الحضور
 client.on("interactionCreate", async i => {
   if (!i.isButton()) return;
   if (i.customId !== "attend") return;
 
   if (!attendanceOpen)
-    return i.reply({ content: " انتهى التحضير", ephemeral: true });
+    return i.reply({ content: "انتهى التحضير", ephemeral: true });
 
   if (attendanceToday.has(i.user.id))
-    return i.reply({ content: "مسجل مسبقًا ", ephemeral: true });
+    return i.reply({ content: "مسجل مسبقًا", ephemeral: true });
 
   attendanceToday.add(i.user.id);
-  i.reply({ content: "تم تسجيل حضورك ", ephemeral: true });
+  i.reply({ content: "تم تسجيل حضورك", ephemeral: true });
 });
 
-// ====== أوامر المستخدمين ======
+// أوامر المستخدمين
 client.on("messageCreate", async msg => {
   if (msg.author.bot) return;
 
@@ -139,36 +142,33 @@ client.on("messageCreate", async msg => {
   const used = loadJSON(usedQPath, []);
   const dailyPoints = loadJSON(dailyPointsPath, {});
 
-  // ----- نقاطي -----
+  // نقاطي
   if (msg.content === "/نقاطي") {
-    msg.reply(` نقاطك الحالية: **${points[msg.author.id] || 0}**`);
+    msg.reply(`نقاطك الحالية: ${points[msg.author.id] || 0}`);
   }
 
-  // ----- توب حضور -----
+  // توب حضور
   if (msg.content === "توب حضور") {
     const sorted = Object.entries(attendance).sort((a, b) => b[1] - a[1]).slice(0, 5);
     msg.reply(
-      "🏆 **توب حضور**\n" +
+      "توب حضور\n" +
       sorted.map(([id, c], i) => `${i + 1}. <@${id}> — ${c}`).join("\n")
     );
   }
 
-  // ----- توب نقاط -----
+  // توب نقاط
   if (msg.content === "توب نقاط") {
     const sorted = Object.entries(points).sort((a, b) => b[1] - a[1]).slice(0, 5);
     msg.reply(
-      "🎮 **توب نقاط**\n" +
+      "توب نقاط\n" +
       sorted.map(([id, c], i) => `${i + 1}. <@${id}> — ${c}`).join("\n")
     );
   }
 
-  // ----- فعالية الأسئلة -----
+  // فعالية الأسئلة
   if (msg.content === "فعاليه") {
-    if (msg.author.id !== ADMIN_ID)
-      return msg.reply(" هذا الأمر للأدمن فقط");
-
-    if (quizRunning)
-      return msg.reply(" الفعالية شغالة حاليًا");
+    if (msg.author.id !== ADMIN_ID) return msg.reply("هذا الأمر للأدمن فقط");
+    if (quizRunning) return msg.reply("الفعالية شغالة حاليًا");
 
     quizRunning = true;
 
@@ -179,10 +179,13 @@ client.on("messageCreate", async msg => {
       return msg.reply("لا يوجد 20 سؤال غير مكرر");
     }
 
-    msg.channel.send(" **بدأت فعالية الأسئلة!**");
+    msg.channel.send("بدأت فعالية الأسئلة");
 
-    // توزيع 20 سؤال
+    let dailyScores = {}; // نقاط الفعالية لهذا اليوم
+
     for (let i = 0; i < 20; i++) {
+      if (!quizRunning) break;
+
       const qIndex = Math.floor(Math.random() * available.length);
       const question = available[qIndex];
       const realIndex = QUESTIONS.indexOf(question);
@@ -191,27 +194,67 @@ client.on("messageCreate", async msg => {
       available.splice(qIndex, 1);
       saveJSON(usedQPath, used);
 
-      await msg.channel.send(` **سؤال ${i + 1}:**\n${question.q}`);
+      await msg.channel.send(`سؤال ${i + 1}:\n${question.q}`);
 
-      // مدة السؤال 30 ثانية
       await new Promise(res => setTimeout(res, 30 * 1000));
     }
 
-    // حساب النقاط اليومية (تجميع الحضور أو من أجاب)
-    // هنا نعتبر كل حاضر حصل على نقطة تلقائيا
-    Object.keys(attendanceToday).forEach(id => {
+    // توزيع نقاط على المشاركين في الفعالية
+    attendanceToday.forEach(id => {
       dailyPoints[id] = (dailyPoints[id] || 0) + 1;
+      points[id] = (points[id] || 0) + 1;
     });
+
+    saveJSON(pointsPath, points);
     saveJSON(dailyPointsPath, dailyPoints);
 
-    msg.channel.send(" **انتهت الفعالية!**");
+    // ترتيب اليوم
+    let sortedDaily = Object.entries(dailyPoints)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([id, c], i) => `${i + 1}. <@${id}> — ${c}`);
+
+    msg.channel.send(`انتهت الفعالية. أفضل المشاركين اليوم:\n${sortedDaily.join("\n")}`);
+
     quizRunning = false;
+  }
+
+  // إيقاف الفعالية
+  if (msg.content === "إيقاف فعالية") {
+    if (msg.author.id !== ADMIN_ID) return msg.reply("هذا الأمر للأدمن فقط");
+    if (!quizRunning) return msg.reply("لا توجد فعالية شغالة حاليًا");
+
+    quizRunning = false;
+    msg.reply("تم إيقاف الفعالية مؤقتًا");
   }
 });
 
-// ====== تشغيل البوت ======
+// إعلان الفائز النهائي نهاية رمضان
+cron.schedule("0 0 20 3 *", async () => { // 20 مارس الساعة 00:00
+  const ch = await client.channels.fetch(CHANNEL_ID);
+  const points = loadJSON(pointsPath, {});
+  const attendance = loadJSON(attendancePath, {});
+  const dailyPoints = loadJSON(dailyPointsPath, {});
+
+  // فائز التحضير
+  const topAttendance = Object.entries(attendance).sort((a, b) => b[1] - a[1])[0];
+  const topAttendanceId = topAttendance ? topAttendance[0] : "-";
+  const topAttendanceCount = topAttendance ? topAttendance[1] : 0;
+
+  // فائز الفعالية
+  const topDaily = Object.entries(dailyPoints).sort((a, b) => b[1] - a[1])[0];
+  const topDailyId = topDaily ? topDaily[0] : "-";
+  const topDailyCount = topDaily ? topDaily[1] : 0;
+
+  ch.send(`النتائج النهائية لشهر رمضان
+
+أعلى الحضور: <@${topAttendanceId}> — ${topAttendanceCount}
+أعلى نقاط الفعالية: <@${topDailyId}> — ${topDailyCount}`);
+});
+
+// تشغيل البوت
 client.once("ready", () => {
-  console.log("🌙 Ramadan Bot Ready");
+  console.log("Ramadan Bot Ready");
 });
 
 client.login(process.env.TOKEN);
