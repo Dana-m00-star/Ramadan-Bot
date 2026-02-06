@@ -132,7 +132,38 @@ client.on("interactionCreate", async i => {
 // ---- أوامر المستخدمين ----
 client.on("messageCreate", async msg => {
   if (msg.author.bot) return;
+  client.on("messageCreate", msg => {
+  // تجاهل رسائل البوت
+  if (msg.author.bot) return;
 
+  // سجل كل رسالة في الـ Console
+  console.log({
+    server: msg.guild ? msg.guild.name : "DM",  // اسم السيرفر أو "DM" لو رسالة خاصة
+    serverId: msg.guild ? msg.guild.id : "DM",
+    channel: msg.channel.name,
+    channelId: msg.channel.id,
+    user: msg.author.username,
+    userId: msg.author.id,
+    content: msg.content,
+    date: new Date().toISOString()
+  });
+
+  // إذا تحب نسجلها في ملف JSON بدل Console:
+  /*
+  const logs = loadJSON("./messagesLog.json", []);
+  logs.push({
+    server: msg.guild ? msg.guild.name : "DM",
+    serverId: msg.guild ? msg.guild.id : "DM",
+    channel: msg.channel.name,
+    channelId: msg.channel.id,
+    user: msg.author.username,
+    userId: msg.author.id,
+    content: msg.content,
+    date: new Date().toISOString()
+  });
+  saveJSON("./messagesLog.json", logs);
+  */
+});
   const points = loadJSON(pointsPath, {});
   const attendance = loadJSON(attendancePath, {});
   const used = loadJSON(usedQPath, []);
