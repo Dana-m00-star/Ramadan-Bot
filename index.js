@@ -196,7 +196,7 @@ async function startQuiz(msg) {
   let dailyScores = {};
 
   for (let i = 0; i < 20; i++) {
-    if (!quizRunning) break;
+    if (!quizRunning) break; // توقف الفعالية فورًا عند الأمر
 
     const qIndex = Math.floor(Math.random() * available.length);
     const question = available[qIndex];
@@ -206,7 +206,7 @@ async function startQuiz(msg) {
     available.splice(qIndex, 1);
     saveJSON(usedQPath, used);
 
-    // نوع السؤال
+    // تحديد نوع السؤال
     let questionType = "qna";
     if (question.type) questionType = question.type;
     else if (["صح", "غلط"].includes(question.a?.[0])) questionType = "tf";
@@ -228,7 +228,6 @@ async function startQuiz(msg) {
     const filter = m => {
       if (m.author.bot) return false;
       const answer = m.content.trim().toLowerCase();
-      console.log(`تم الرد من ${m.author.tag}: ${answer}`);
 
       if (questionType === "tf") return ["صح", "غلط"].includes(answer);
       if (questionType === "words") return question.word && answer === question.word.trim().toLowerCase();
@@ -237,6 +236,7 @@ async function startQuiz(msg) {
     };
 
     try {
+      // ننتظر أول رسالة صحيحة فقط
       const collected = await msg.channel.awaitMessages({ filter, max: 1, time: 30000, errors: ["time"] });
       const winnerMsg = collected.first();
       const winner = winnerMsg.author;
@@ -245,8 +245,15 @@ async function startQuiz(msg) {
       points[winner.id] = (points[winner.id] || 0) + 1;
       dailyScores[winner.id] = (dailyScores[winner.id] || 0) + 1;
 
-      await msg.channel.send(`✅ <@${winner.id}> صح! حصلت على نقطة.`);
+      // رد مباشر على الإجابة الصحيحة
+      await winnerMsg.reply(`✅ صح! حصلت على نقطة.`);
+
+      // حفظ النقاط فورًا
+      saveJSON(pointsPath, points);
+      saveJSON(dailyPointsPath, dailyScores);
+
     } catch {
+      // إذا انتهى الوقت ولم يجاوب أحد
       if (questionType === "tf" || questionType === "qna") {
         await msg.channel.send(`انتهى الوقت! الإجابة الصحيحة: ${Array.isArray(question.a) ? question.a.join(", ") : question.a}`);
       } else if (questionType === "words") {
@@ -254,13 +261,11 @@ async function startQuiz(msg) {
       }
     }
 
+    // انتظار قصير قبل السؤال التالي
     await new Promise(res => setTimeout(res, 1000));
   }
 
-  // حفظ النقاط بعد انتهاء الأسئلة
-  saveJSON(pointsPath, points);
-  saveJSON(dailyPointsPath, dailyScores);
-
+  // بعد انتهاء جميع الأسئلة
   const sortedDaily = Object.entries(dailyScores)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
