@@ -128,6 +128,8 @@ client.on("interactionCreate", async i => {
 // ---- أوامر المستخدمين ----
 client.on("messageCreate", async msg => {
   if (msg.author.bot) return;
+  
+  console.log("رسالة:", msg.content, "من:", msg.author.id);
 
   const points = loadJSON(pointsPath, {});
   const attendance = loadJSON(attendancePath, {});
