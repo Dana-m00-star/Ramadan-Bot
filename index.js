@@ -349,7 +349,7 @@ cron.schedule("0 0 20 3 *", async () => {
 });
 
 // ---- تشغيل البوت ----
-client.once("ready", () => {
+client.once("clientReady", () => {
   console.log("Ramadan Bot Ready");
 });
 
