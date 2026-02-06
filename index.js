@@ -30,7 +30,7 @@ let attendanceOpen = false;
 let quizRunning = false;
 
 // تحميل الأسئلة
-const QUESTIONS = require(questionsPath);
+const QUESTIONS = require(questionsPath).questions;
 
 // دوال مساعدة
 function loadJSON(path, def) {
