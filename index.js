@@ -213,14 +213,14 @@ async function startQuiz(msg) {
     else if (question.word) questionType = "words";
 
     // عرض السؤال
-   let displayQ;
-if (questionType === "words") {
-  displayQ = `اول واحد يكتب: ${question.word}`;
-} else if (questionType === "tf") {
-  displayQ = `جاوب بصح أو غلط: ${question.q}`;
-} else {
-  displayQ = question.q;
-}
+    let displayQ;
+    if (questionType === "words") {
+      displayQ = `اول واحد يكتب: ${question.word.trim()}`;
+    } else if (questionType === "tf") {
+      displayQ = `جاوب بصح أو غلط: ${question.q}`;
+    } else {
+      displayQ = question.q;
+    }
 
     await msg.channel.send(`سؤال ${i + 1}:\n${displayQ}`);
 
