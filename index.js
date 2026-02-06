@@ -334,59 +334,95 @@ client.on("messageCreate", async msg => {
     );
   }
 
-  // فعالية الأسئلة
-  if (msg.content === "فعاليه") {
-    if (msg.author.id !== ADMIN_ID) return msg.reply("هذا الأمر للأدمن فقط");
-    if (quizRunning) return msg.reply("الفعالية شغالة حاليًا");
+ // فعالية الأسئلة
+if (msg.content === "فعاليه") {
+  if (msg.author.id !== ADMIN_ID) return msg.reply("هذا الأمر للأدمن فقط");
+  if (quizRunning) return msg.reply("الفعالية شغالة حاليًا");
 
-    quizRunning = true;
+  quizRunning = true;
 
-    let available = QUESTIONS.filter((_, i) => !used.includes(i));
+  let available = QUESTIONS.filter((_, i) => !used.includes(i));
 
-    if (available.length < 20) {
-      quizRunning = false;
-      return msg.reply("لا يوجد 20 سؤال غير مكرر");
-    }
-
-    msg.channel.send("بدأت فعالية الأسئلة");
-
-    let dailyScores = {}; // نقاط الفعالية لهذا اليوم
-
-    for (let i = 0; i < 20; i++) {
-      if (!quizRunning) break;
-
-      const qIndex = Math.floor(Math.random() * available.length);
-      const question = available[qIndex];
-      const realIndex = QUESTIONS.indexOf(question);
-
-      used.push(realIndex);
-      available.splice(qIndex, 1);
-      saveJSON(usedQPath, used);
-
-      await msg.channel.send(`سؤال ${i + 1}:\n${question.q}`);
-
-      await new Promise(res => setTimeout(res, 30 * 1000));
-    }
-
-    // توزيع نقاط على المشاركين في الفعالية
-    attendanceToday.forEach(id => {
-      dailyPoints[id] = (dailyPoints[id] || 0) + 1;
-      points[id] = (points[id] || 0) + 1;
-    });
-
-    saveJSON(pointsPath, points);
-    saveJSON(dailyPointsPath, dailyPoints);
-
-    // ترتيب اليوم
-    let sortedDaily = Object.entries(dailyPoints)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([id, c], i) => `${i + 1}. <@${id}> — ${c}`);
-
-    msg.channel.send(`انتهت الفعالية. أفضل المشاركين اليوم:\n${sortedDaily.join("\n")}`);
-
+  if (available.length < 20) {
     quizRunning = false;
+    return msg.reply("لا يوجد 20 سؤال غير مكرر");
   }
+
+  msg.channel.send("بدأت فعالية الأسئلة");
+
+  let dailyScores = {}; // نقاط الفعالية لهذا اليوم
+
+  for (let i = 0; i < 20; i++) {
+    if (!quizRunning) break;
+
+    const qIndex = Math.floor(Math.random() * available.length);
+    const question = available[qIndex];
+    const realIndex = QUESTIONS.indexOf(question);
+
+    used.push(realIndex);
+    available.splice(qIndex, 1);
+    saveJSON(usedQPath, used);
+
+    // تحديد نوع السؤال
+    let questionType = "qna"; // افتراضي
+    if (question.type) questionType = question.type; // لو محدد في ملف الأسئلة
+    else if (["صح", "غلط"].includes(question.a?.[0])) questionType = "tf"; 
+    else if (question.word) questionType = "words";
+
+    // إرسال السؤال
+    let displayQ = question.q;
+    if (questionType === "words") displayQ = `اول واحد يكتب: ${question.q}`;
+    else if (questionType === "tf") displayQ = `جاوب بصح أو غلط: ${question.q}`;
+
+    await msg.channel.send(`سؤال ${i + 1}:\n${displayQ}`);
+
+    // فلتر الإجابة
+    const filter = m => {
+      if (m.author.bot) return false;
+      if (questionType === "tf") return ["صح", "غلط"].includes(m.content);
+      else if (questionType === "words") return m.content === question.word;
+      else return question.a.includes(m.content);
+    };
+
+    try {
+      const collected = await msg.channel.awaitMessages({
+        filter,
+        max: 1,
+        time: 30000,
+        errors: ["time"]
+      });
+
+      const winner = collected.first().author;
+      dailyScores[winner.id] = (dailyScores[winner.id] || 0) + 1;
+      points[winner.id] = (points[winner.id] || 0) + 1;
+
+      await msg.channel.send(`${winner} أجاب صح! النقاط: ${dailyScores[winner.id]}`);
+    } catch {
+      // انتهاء الوقت بدون إجابة صحيحة
+      if (questionType === "tf" || questionType === "qna") {
+        await msg.channel.send(`انتهى الوقت! الإجابة الصحيحة: ${question.a.join(", ")}`);
+      } else if (questionType === "words") {
+        await msg.channel.send(`انتهى الوقت! الإجابة الصحيحة: ${question.word}`);
+      }
+    }
+
+    await new Promise(res => setTimeout(res, 1000)); // فاصل صغير قبل السؤال التالي
+  }
+
+  // حفظ النقاط بعد انتهاء الفعالية
+  saveJSON(pointsPath, points);
+  saveJSON(dailyPointsPath, dailyScores);
+
+  // ترتيب أفضل المشاركين
+  let sortedDaily = Object.entries(dailyScores)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([id, c], i) => `${i + 1}. <@${id}> — ${c}`);
+
+  msg.channel.send(`انتهت الفعالية. أفضل المشاركين اليوم:\n${sortedDaily.join("\n")}`);
+
+  quizRunning = false;
+}
 
   // إيقاف الفعالية
   if (msg.content === "إيقاف فعالية") {
