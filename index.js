@@ -214,7 +214,7 @@ client.on("messageCreate", async msg => {
 async function startQuiz(msg) {
   quizRunning = true;
 
-  // تحميل البيانات هنا داخل الفعالية
+  // تحميل البيانات
   const points = loadJSON(pointsPath, {});
   const used = loadJSON(usedQPath, []);
   const dailyScores = loadJSON(dailyPointsPath, {});
@@ -226,10 +226,10 @@ async function startQuiz(msg) {
     return msg.reply("لا يوجد 20 سؤال غير مكرر");
   }
 
-  await msg.channel.send("بدأت فعالية الأسئلة!");
+  await msg.channel.send("بدأت فعالية الأسئلة! ");
 
   for (let i = 0; i < 20; i++) {
-    if (!quizRunning) break; // توقف الفعالية فورًا عند الأمر
+    if (!quizRunning) break;
 
     const qIndex = Math.floor(Math.random() * available.length);
     const question = available[qIndex];
@@ -247,69 +247,102 @@ async function startQuiz(msg) {
 
     // عرض السؤال
     let displayQ;
-    if (questionType === "words") displayQ = `اول واحد يكتب: ${question.word}`;
-    else if (questionType === "tf") displayQ = `جاوب بصح أو غلط: ${question.q}`;
-    else displayQ = question.q;
+    if (questionType === "words")
+      displayQ = ` اول واحد يكتب:\n${question.word}`;
+    else if (questionType === "tf")
+      displayQ = ` جاوب بصح أو غلط:\n${question.q}`;
+    else
+      displayQ = ` ${question.q}`;
 
-    await msg.channel.send(`سؤال ${i + 1}:\n${displayQ}`);
+    await msg.channel.send(`**سؤال ${i + 1}:**\n${displayQ}`);
 
-    // ---- إنشاء Collector للرسائل ----
+    // ---- Collector ----
     const filter = m => !m.author.bot;
-    const collector = msg.channel.createMessageCollector({ filter, time: 30000 });
+    const collector = msg.channel.createMessageCollector({
+      filter,
+      time: 30000
+    });
+
     let answered = false;
 
-    collector.on("collect", async m => {
-      if (!quizRunning) return collector.stop();
+    const normalize = txt =>
+      txt
+        .toString()
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, " ");
 
-      const answer = m.content.trim().toLowerCase();
+    collector.on("collect", async m => {
+      if (!quizRunning) {
+        collector.stop();
+        return;
+      }
+
+      console.log("📩", m.author.username, ":", m.content);
+
+      const answer = normalize(m.content);
       let correct = false;
 
       if (questionType === "tf") {
-        correct = Array.isArray(question.a)
-          ? question.a.some(a => a.trim().toLowerCase() === answer)
-          : answer === question.a.toLowerCase();
-      } else if (questionType === "words") {
-        correct = answer === question.word.trim().toLowerCase();
-      } else if (questionType === "qna") {
-        correct = Array.isArray(question.a) && question.a.some(a => a.trim().toLowerCase() === answer);
+        if (Array.isArray(question.a)) {
+          correct = question.a.some(a => normalize(a) === answer);
+        } else {
+          correct = normalize(question.a) === answer;
+        }
+      }
+
+      else if (questionType === "words") {
+        correct = normalize(question.word) === answer;
+      }
+
+      else if (questionType === "qna") {
+        if (Array.isArray(question.a)) {
+          correct = question.a.some(a => normalize(a) === answer);
+        }
       }
 
       if (correct && !answered) {
         answered = true;
-        collector.stop();
 
-        // تسجيل النقاط فورًا
+        // ➕ إضافة النقاط
         points[m.author.id] = (points[m.author.id] || 0) + 1;
         dailyScores[m.author.id] = (dailyScores[m.author.id] || 0) + 1;
+
         saveJSON(pointsPath, points);
         saveJSON(dailyPointsPath, dailyScores);
 
-        await m.reply(`✅ صح! حصلت على نقطة.`);
+        await m.reply("✅ **صح!** حصلت على نقطة ");
+
+        collector.stop("answered");
       }
     });
 
-    // ---- حدث end واحد فقط لكل سؤال ----
     await new Promise(resolve => {
-      collector.on("end", async collected => {
+      collector.on("end", async () => {
         if (!answered && quizRunning) {
-          if (questionType === "tf" || questionType === "qna") {
-            await msg.channel.send(`انتهى الوقت! الإجابة الصحيحة: ${Array.isArray(question.a) ? question.a.join(", ") : question.a}`);
-          } else if (questionType === "words") {
-            await msg.channel.send(`انتهى الوقت! الإجابة الصحيحة: ${question.word || "غير متوفر"}`);
-          }
+          await msg.channel.send(
+            ` انتهى الوقت!\n**الإجابة الصحيحة:** ${
+              Array.isArray(question.a)
+                ? question.a.join("، ")
+                : question.a || question.word
+            }`
+          );
         }
-        resolve(); // ننتقل للسؤال التالي بعد انتهاء Collector
+        resolve();
       });
     });
   }
 
-  // بعد انتهاء جميع الأسئلة
+  // ---- نتائج اليوم ----
   const sortedDaily = Object.entries(dailyScores)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
-    .map(([id, c], i) => `${i + 1}. <@${id}> — ${c}`);
+    .map(([id, c], i) => `${i + 1}. <@${id}> — ${c} نقطة`);
 
-  await msg.channel.send(`انتهت الفعالية. أفضل المشاركين اليوم:\n${sortedDaily.join("\n")}`);
+  await msg.channel.send(
+    `🏁 **انتهت الفعالية**\n\n🏆 أفضل المشاركين اليوم:\n${sortedDaily.join("\n") || "لا أحد"}`
+  );
+
   quizRunning = false;
 }
 // ---- كرون: إعلان الفائز النهائي نهاية رمضان ----
