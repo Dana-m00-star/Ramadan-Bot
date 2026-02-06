@@ -207,16 +207,17 @@ client.on("messageCreate", async msg => {
       };
 
       try {
-        const collected = await msg.channel.awaitMessages({ filter, max: 1, time: 30000, errors: ["time"] });
-        const winner = collected.first().author;
-        dailyScores[winner.id] = (dailyScores[winner.id] || 0) + 1;
-        points[winner.id] = (points[winner.id] || 0) + 1;
-        await msg.channel.send(`${winner} أجاب صح! النقاط: ${dailyScores[winner.id]}`);
-      } catch {
-        if (questionType === "tf" || questionType === "qna") await msg.channel.send(`انتهى الوقت! الإجابة الصحيحة: ${question.a.join(", ")}`);
-        else if (questionType === "words") await msg.channel.send(`انتهى الوقت! الإجابة الصحيحة: ${question.word}`);
-      }
+  const collected = await msg.channel.awaitMessages({ filter, max: 1, time: 30000, errors: ["time"] });
+  const winner = collected.first().author;
+  points[winner.id] = (points[winner.id] || 0) + 1;
 
+  // الرد مباشر على الشخص بدون ذكر نقاط اليوم
+  await collected.first().reply(`✅ صح! حصلت على نقطة.`);
+} catch {
+  if (questionType === "tf" || questionType === "qna") await msg.channel.send(`انتهى الوقت! الإجابة الصحيحة: ${question.a.join(", ")}`);
+  else if (questionType === "words") await msg.channel.send(`انتهى الوقت! الإجابة الصحيحة: ${question.word}`);
+}
+    
       await new Promise(res => setTimeout(res, 1000));
     }
 
