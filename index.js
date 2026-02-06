@@ -43,7 +43,7 @@ let attendanceOpen = false;
 let quizRunning = false;
 
 // تحميل الأسئلة
-const QUESTIONS = require(questionsPath).questions;
+const QUESTIONS = [...qna, ...tf, ...words];
 
 // دوال مساعدة
 function loadJSON(path, def) {
