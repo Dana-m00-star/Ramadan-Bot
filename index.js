@@ -144,7 +144,7 @@ client.on("messageCreate", async msg => {
   const dailyPoints = loadJSON(dailyPointsPath, {});
 
   // نقاطي
-  if (msg.content === "/نقاطي") {
+  if (msg.content === "نقاطي") {
     msg.reply(`نقاطك الحالية: ${points[msg.author.id] || 0}`);
   }
 
