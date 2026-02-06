@@ -2,14 +2,27 @@ const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle 
 const cron = require("node-cron");
 const fs = require("fs");
 
+// استدعاء الأسئلة
+const { qna, tf, words } = require('./questions.js');
+
+// دالة لإرجاع سؤال عشوائي ونوعه
+function getRandomQuestion() {
+    const questionTypes = [qna, tf, words]; // أنواع الأسئلة
+    const selectedType = questionTypes[Math.floor(Math.random() * questionTypes.length)]; // اختيار النوع عشوائي
+    const question = selectedType[Math.floor(Math.random() * selectedType.length)]; // اختيار سؤال عشوائي من النوع
+    return { question, type: selectedType }; // نرجع السؤال والنوع
+}
+
+// إنشاء البوت
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent
-  ]
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent
+    ]
 });
 
+// إعدادات البوت
 const CHANNEL_ID = process.env.CHANNEL_ID;
 const ADMIN_ID = "1406429112502976556";
 
@@ -195,10 +208,7 @@ async function startQuiz(msg) {
   for (let i = 0; i < 20; i++) {
     if (!quizRunning) break;
 
-    const qIndex = Math.floor(Math.random() * available.length);
-    const question = available[qIndex];
-    const realIndex = QUESTIONS.indexOf(question);
-
+    const { question, type } = getRandomQuestion();    const realIndex = QUESTIONS.indexOf(question);
     used.push(realIndex);
     available.splice(qIndex, 1);
     saveJSON(usedQPath, used);
