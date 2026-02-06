@@ -224,45 +224,49 @@ async function startQuiz(msg) {
 
     await msg.channel.send(`سؤال ${i + 1}:\n${displayQ}`);
 
-    // فلتر الإجابة
-    const filter = m => {
-      if (m.author.bot) return false;
-      const answer = m.content.trim().toLowerCase();
+    // إنشاء Collector للرسائل
+   collector.on("collect", async m => {
+  if (!quizRunning) return collector.stop(); // لو تم إيقاف الفعالية
 
-      if (questionType === "tf") return ["صح", "غلط"].includes(answer);
-      if (questionType === "words") return question.word && answer === question.word.trim().toLowerCase();
-      if (questionType === "qna") return Array.isArray(question.a) && question.a.some(a => a.trim().toLowerCase() === answer);
-      return false;
-    };
+  const answer = m.content.trim().toLowerCase();
+  let correct = false;
 
-    try {
-      // ننتظر أول رسالة صحيحة فقط
-      const collected = await msg.channel.awaitMessages({ filter, max: 1, time: 30000, errors: ["time"] });
-      const winnerMsg = collected.first();
-      const winner = winnerMsg.author;
+  if (questionType === "tf") {
+    correct = Array.isArray(question.a) 
+              ? question.a.some(a => a.trim().toLowerCase() === answer) 
+              : answer === question.a.toLowerCase();
+  } else if (questionType === "words") {
+    correct = answer === question.word.trim().toLowerCase();
+  } else if (questionType === "qna") {
+    correct = Array.isArray(question.a) && question.a.some(a => a.trim().toLowerCase() === answer);
+  }
 
-      // تسجيل النقاط
-      points[winner.id] = (points[winner.id] || 0) + 1;
-      dailyScores[winner.id] = (dailyScores[winner.id] || 0) + 1;
+  if (correct && !answered) {
+    answered = true;
+    collector.stop();
 
-      // رد مباشر على الإجابة الصحيحة
-      await winnerMsg.reply(`✅ صح! حصلت على نقطة.`);
+    // تسجيل النقاط
+    points[m.author.id] = (points[m.author.id] || 0) + 1;
+    dailyScores[m.author.id] = (dailyScores[m.author.id] || 0) + 1;
+    saveJSON(pointsPath, points);
+    saveJSON(dailyPointsPath, dailyScores);
 
-      // حفظ النقاط فورًا
-      saveJSON(pointsPath, points);
-      saveJSON(dailyPointsPath, dailyScores);
+    await m.reply(`✅ صح! حصلت على نقطة.`);
+  }
+});
 
-    } catch {
-      // إذا انتهى الوقت ولم يجاوب أحد
-      if (questionType === "tf" || questionType === "qna") {
-        await msg.channel.send(`انتهى الوقت! الإجابة الصحيحة: ${Array.isArray(question.a) ? question.a.join(", ") : question.a}`);
-      } else if (questionType === "words") {
-        await msg.channel.send(`انتهى الوقت! الإجابة الصحيحة: ${question.word || "غير متوفر"}`);
+    collector.on("end", async collected => {
+      if (!answered && quizRunning) {
+        if (questionType === "tf" || questionType === "qna") {
+          await msg.channel.send(`انتهى الوقت! الإجابة الصحيحة: ${Array.isArray(question.a) ? question.a.join(", ") : question.a}`);
+        } else if (questionType === "words") {
+          await msg.channel.send(`انتهى الوقت! الإجابة الصحيحة: ${question.word || "غير متوفر"}`);
+        }
       }
-    }
+    });
 
-    // انتظار قصير قبل السؤال التالي
-    await new Promise(res => setTimeout(res, 1000));
+    // ننتظر انتهاء Collector قبل السؤال التالي
+    await new Promise(res => setTimeout(res, 31000));
   }
 
   // بعد انتهاء جميع الأسئلة
