@@ -208,10 +208,16 @@ async function startQuiz(msg) {
   for (let i = 0; i < 20; i++) {
     if (!quizRunning) break;
 
-    const { question, type } = getRandomQuestion();    const realIndex = QUESTIONS.indexOf(question);
+    const qIndex = Math.floor(Math.random() * available.length); // اختر سؤال عشوائي
+    const question = available[qIndex];                          
+    const realIndex = QUESTIONS.indexOf(question);
+
     used.push(realIndex);
-    available.splice(qIndex, 1);
+    available.splice(qIndex, 1);   // إزالة السؤال من المتاح
     saveJSON(usedQPath, used);
+
+    // باقي كود عرض السؤال...
+}
 
     // تحديد نوع السؤال
     let questionType = "qna"; // افتراضي
