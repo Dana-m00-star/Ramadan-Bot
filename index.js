@@ -215,7 +215,7 @@ async function startQuiz(msg) {
     // عرض السؤال
     let displayQ;
     if (questionType === "words") {
-      displayQ = `اول واحد يكتب: ${question.word.trim()}`;
+      displayQ = `اول واحد يكتب: ${question.word}`;
     } else if (questionType === "tf") {
       displayQ = `جاوب بصح أو غلط: ${question.q}`;
     } else {
@@ -228,10 +228,11 @@ async function startQuiz(msg) {
     const filter = m => {
       if (m.author.bot) return false;
       const answer = m.content.trim().toLowerCase();
+      console.log(`تم الرد من ${m.author.tag}: ${answer}`);
 
       if (questionType === "tf") return ["صح", "غلط"].includes(answer);
       if (questionType === "words") return question.word && answer === question.word.trim().toLowerCase();
-      if (questionType === "qna") return question.a && question.a.some(a => a.trim().toLowerCase() === answer);
+      if (questionType === "qna") return Array.isArray(question.a) && question.a.some(a => a.trim().toLowerCase() === answer);
       return false;
     };
 
@@ -256,6 +257,7 @@ async function startQuiz(msg) {
     await new Promise(res => setTimeout(res, 1000));
   }
 
+  // حفظ النقاط بعد انتهاء الأسئلة
   saveJSON(pointsPath, points);
   saveJSON(dailyPointsPath, dailyScores);
 
