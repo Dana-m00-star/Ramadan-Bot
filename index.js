@@ -224,36 +224,40 @@ async function startQuiz(msg) {
 
     await msg.channel.send(`سؤال ${i + 1}:\n${displayQ}`);
 
-    // إنشاء Collector للرسائل
-   collector.on("collect", async m => {
-  if (!quizRunning) return collector.stop(); // لو تم إيقاف الفعالية
+    // ===== التعديل =====
+    const filter = m => !m.author.bot;
+    const collector = msg.channel.createMessageCollector({ filter, time: 30000 });
+    let answered = false;
 
-  const answer = m.content.trim().toLowerCase();
-  let correct = false;
+    collector.on("collect", async m => {
+      if (!quizRunning) return collector.stop(); // لو تم إيقاف الفعالية
 
-  if (questionType === "tf") {
-    correct = Array.isArray(question.a) 
-              ? question.a.some(a => a.trim().toLowerCase() === answer) 
-              : answer === question.a.toLowerCase();
-  } else if (questionType === "words") {
-    correct = answer === question.word.trim().toLowerCase();
-  } else if (questionType === "qna") {
-    correct = Array.isArray(question.a) && question.a.some(a => a.trim().toLowerCase() === answer);
-  }
+      const answer = m.content.trim().toLowerCase();
+      let correct = false;
 
-  if (correct && !answered) {
-    answered = true;
-    collector.stop();
+      if (questionType === "tf") {
+        correct = Array.isArray(question.a) 
+                  ? question.a.some(a => a.trim().toLowerCase() === answer) 
+                  : answer === question.a.toLowerCase();
+      } else if (questionType === "words") {
+        correct = answer === question.word.trim().toLowerCase();
+      } else if (questionType === "qna") {
+        correct = Array.isArray(question.a) && question.a.some(a => a.trim().toLowerCase() === answer);
+      }
 
-    // تسجيل النقاط
-    points[m.author.id] = (points[m.author.id] || 0) + 1;
-    dailyScores[m.author.id] = (dailyScores[m.author.id] || 0) + 1;
-    saveJSON(pointsPath, points);
-    saveJSON(dailyPointsPath, dailyScores);
+      if (correct && !answered) {
+        answered = true;
+        collector.stop();
 
-    await m.reply(`✅ صح! حصلت على نقطة.`);
-  }
-});
+        // تسجيل النقاط
+        points[m.author.id] = (points[m.author.id] || 0) + 1;
+        dailyScores[m.author.id] = (dailyScores[m.author.id] || 0) + 1;
+        saveJSON(pointsPath, points);
+        saveJSON(dailyPointsPath, dailyScores);
+
+        await m.reply(`✅ صح! حصلت على نقطة.`);
+      }
+    });
 
     collector.on("end", async collected => {
       if (!answered && quizRunning) {
