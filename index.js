@@ -183,7 +183,11 @@ client.on("messageCreate", async msg => {
 async function startQuiz(msg) {
   quizRunning = true;
 
-  let used = loadJSON(usedQPath, []);
+  // تحميل البيانات هنا داخل الفعالية
+  const points = loadJSON(pointsPath, {});
+  const used = loadJSON(usedQPath, []);
+  const dailyScores = loadJSON(dailyPointsPath, {});
+
   let available = QUESTIONS.filter((_, i) => !used.includes(i));
 
   if (available.length < 20) {
@@ -192,8 +196,6 @@ async function startQuiz(msg) {
   }
 
   await msg.channel.send("بدأت فعالية الأسئلة!");
-
-  let dailyScores = {};
 
   for (let i = 0; i < 20; i++) {
     if (!quizRunning) break; // توقف الفعالية فورًا عند الأمر
@@ -214,24 +216,19 @@ async function startQuiz(msg) {
 
     // عرض السؤال
     let displayQ;
-    if (questionType === "words") {
-      displayQ = `اول واحد يكتب: ${question.word}`;
-    } else if (questionType === "tf") {
-      displayQ = `جاوب بصح أو غلط: ${question.q}`;
-    } else {
-      displayQ = question.q;
-    }
+    if (questionType === "words") displayQ = `اول واحد يكتب: ${question.word}`;
+    else if (questionType === "tf") displayQ = `جاوب بصح أو غلط: ${question.q}`;
+    else displayQ = question.q;
 
     await msg.channel.send(`سؤال ${i + 1}:\n${displayQ}`);
 
-    // إنشاء Collector للرسائل
+    // ---- إنشاء Collector للرسائل ----
     const filter = m => !m.author.bot;
     const collector = msg.channel.createMessageCollector({ filter, time: 30000 });
-
     let answered = false;
 
     collector.on("collect", async m => {
-      if (!quizRunning) return collector.stop(); // لو تم إيقاف الفعالية
+      if (!quizRunning) return collector.stop();
 
       const answer = m.content.trim().toLowerCase();
       let correct = false;
@@ -260,18 +257,19 @@ async function startQuiz(msg) {
       }
     });
 
-    collector.on("end", async collected => {
-      if (!answered && quizRunning) {
-        if (questionType === "tf" || questionType === "qna") {
-          await msg.channel.send(`انتهى الوقت! الإجابة الصحيحة: ${Array.isArray(question.a) ? question.a.join(", ") : question.a}`);
-        } else if (questionType === "words") {
-          await msg.channel.send(`انتهى الوقت! الإجابة الصحيحة: ${question.word || "غير متوفر"}`);
+    // ---- حدث end واحد فقط لكل سؤال ----
+    await new Promise(resolve => {
+      collector.on("end", async collected => {
+        if (!answered && quizRunning) {
+          if (questionType === "tf" || questionType === "qna") {
+            await msg.channel.send(`انتهى الوقت! الإجابة الصحيحة: ${Array.isArray(question.a) ? question.a.join(", ") : question.a}`);
+          } else if (questionType === "words") {
+            await msg.channel.send(`انتهى الوقت! الإجابة الصحيحة: ${question.word || "غير متوفر"}`);
+          }
         }
-      }
+        resolve(); // ننتقل للسؤال التالي بعد انتهاء Collector
+      });
     });
-
-    // لا نحتاج await أو setTimeout هنا، Collector يدير نفسه
-    await new Promise(res => collector.once("end", res));
   }
 
   // بعد انتهاء جميع الأسئلة
@@ -305,7 +303,7 @@ cron.schedule("0 0 20 3 *", async () => {
 });
 
 // ---- تشغيل البوت ----
-client.once("ready", () => {
+client.once("clientReady", () => {
   console.log("Ramadan Bot Ready");
 });
 
