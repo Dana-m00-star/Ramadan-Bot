@@ -216,9 +216,6 @@ async function startQuiz(msg) {
     available.splice(qIndex, 1);   // إزالة السؤال من المتاح
     saveJSON(usedQPath, used);
 
-    // باقي كود عرض السؤال...
-}
-
     // تحديد نوع السؤال
     let questionType = "qna"; // افتراضي
     if (question.type) questionType = question.type;
@@ -250,14 +247,16 @@ async function startQuiz(msg) {
 
       await collected.first().reply(`✅ صح! حصلت على نقطة.`);
     } catch {
-      if (questionType === "tf" || questionType === "qna") await msg.channel.send(`انتهى الوقت! الإجابة الصحيحة: ${Array.isArray(question.a) ? question.a.join(", ") : question.a}`);
-      else if (questionType === "words") await msg.channel.send(`انتهى الوقت! الإجابة الصحيحة: ${question.word}`);
+      if (questionType === "tf" || questionType === "qna") 
+        await msg.channel.send(`انتهى الوقت! الإجابة الصحيحة: ${Array.isArray(question.a) ? question.a.join(", ") : question.a}`);
+      else if (questionType === "words") 
+        await msg.channel.send(`انتهى الوقت! الإجابة الصحيحة: ${question.word}`);
     }
 
     await new Promise(res => setTimeout(res, 1000));
-  }
+  } // <--- هذا يقفل حلقة for
 
-  // حفظ النقاط
+  // حفظ النقاط بعد انتهاء الأسئلة
   saveJSON(pointsPath, points);
   saveJSON(dailyPointsPath, dailyScores);
 
