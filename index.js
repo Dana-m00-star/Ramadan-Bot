@@ -132,26 +132,9 @@ client.on("interactionCreate", async i => {
 // ---- أوامر المستخدمين ----
 client.on("messageCreate", async msg => {
   if (msg.author.bot) return;
-  client.on("messageCreate", msg => {
-  // تجاهل رسائل البوت
-  if (msg.author.bot) return;
 
   // سجل كل رسالة في الـ Console
   console.log({
-    server: msg.guild ? msg.guild.name : "DM",  // اسم السيرفر أو "DM" لو رسالة خاصة
-    serverId: msg.guild ? msg.guild.id : "DM",
-    channel: msg.channel.name,
-    channelId: msg.channel.id,
-    user: msg.author.username,
-    userId: msg.author.id,
-    content: msg.content,
-    date: new Date().toISOString()
-  });
-
-  // إذا تحب نسجلها في ملف JSON بدل Console:
-  /*
-  const logs = loadJSON("./messagesLog.json", []);
-  logs.push({
     server: msg.guild ? msg.guild.name : "DM",
     serverId: msg.guild ? msg.guild.id : "DM",
     channel: msg.channel.name,
@@ -161,9 +144,7 @@ client.on("messageCreate", async msg => {
     content: msg.content,
     date: new Date().toISOString()
   });
-  saveJSON("./messagesLog.json", logs);
-  */
-});
+
   const points = loadJSON(pointsPath, {});
   const attendance = loadJSON(attendancePath, {});
   const used = loadJSON(usedQPath, []);
@@ -345,6 +326,7 @@ async function startQuiz(msg) {
 
   quizRunning = false;
 }
+
 // ---- كرون: إعلان الفائز النهائي نهاية رمضان ----
 cron.schedule("0 0 20 3 *", async () => {
   const ch = await client.channels.fetch(CHANNEL_ID);
@@ -367,7 +349,7 @@ cron.schedule("0 0 20 3 *", async () => {
 });
 
 // ---- تشغيل البوت ----
-client.once("clientReady", () => {
+client.once("ready", () => {
   console.log("Ramadan Bot Ready");
 });
 
