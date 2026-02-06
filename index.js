@@ -158,7 +158,7 @@ client.on("messageCreate", async msg => {
   }
 
   // ---- فعالية الأسئلة ----
-  if (msg.content === "فعاليه") {
+ if (msg.content.toLowerCase().includes("فعاليه")) {
     if (msg.author.id !== ADMIN_ID) return msg.reply("هذا الأمر للأدمن فقط");
     if (quizRunning) return msg.reply("الفعالية شغالة حاليًا");
 
@@ -236,7 +236,7 @@ client.on("messageCreate", async msg => {
   }
 
   // إيقاف الفعالية
-  if (msg.content === "إيقاف فعالية") {
+  if (msg.content === "إيقاف فعاليه") {
     if (msg.author.id !== ADMIN_ID) return msg.reply("هذا الأمر للأدمن فقط");
     if (!quizRunning) return msg.reply("لا توجد فعالية شغالة حاليًا");
 
