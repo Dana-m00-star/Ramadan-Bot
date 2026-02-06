@@ -29,9 +29,8 @@ let attendanceToday = new Set();
 let attendanceOpen = false;
 let quizRunning = false;
 
-// ---- تحميل الأسئلة ----
-const { qna, tf, words } = require(questionsPath); // استدعاء الثلاث مصفوفات
-const QUESTIONS = [...qna, ...tf, ...words];        // دمجهم في مصفوفة وحدة
+// تحميل الأسئلة
+const QUESTIONS = require(questionsPath);
 
 // دوال مساعدة
 function loadJSON(path, def) {
@@ -160,88 +159,93 @@ client.on("messageCreate", async msg => {
     );
   }
 
- // ---- فعالية الأسئلة ----
+  // ---- فعالية الأسئلة ----
+  if (msg.content.trim().toLowerCase() === "فعاليه") {
+    if (msg.author.id !== ADMIN_ID) return msg.reply("هذا الأمر للأدمن فقط");
+    if (quizRunning) return msg.reply("الفعالية شغالة حاليًا");
 
- if (msg.content.trim().toLowerCase() === "فعاليه") {
-  if (msg.author.id !== ADMIN_ID) return msg.reply("هذا الأمر للأدمن فقط");
-  if (quizRunning) return msg.reply("الفعالية شغالة حاليًا");
+    quizRunning = true;
+    let available = QUESTIONS.filter((_, i) => !used.includes(i));
 
-  // باقي كود الفعالية
-   
-  quizRunning = true;
-  let available = QUESTIONS.filter((_, i) => !used.includes(i));
-
-  if (available.length < 20) {
-    quizRunning = false;
-    return msg.reply("لا يوجد 20 سؤال غير مكرر");
-  }
-
-  msg.channel.send("بدأت فعالية الأسئلة");
-
-  let dailyScores = {}; // نقاط الفعالية لهذا اليوم
-
-  for (let i = 0; i < 20; i++) {
-    if (!quizRunning) break;
-
-    const qIndex = Math.floor(Math.random() * available.length);
-    const question = available[qIndex];
-    const realIndex = QUESTIONS.indexOf(question);
-
-    used.push(realIndex);
-    available.splice(qIndex, 1);
-    saveJSON(usedQPath, used);
-
-    // تحديد نوع السؤال
-    let questionType = "qna"; // افتراضي
-    if (question.type) questionType = question.type;
-    else if (["صح", "غلط"].includes(question.a?.[0])) questionType = "tf"; 
-    else if (question.word) questionType = "words";
-
-    // عرض السؤال
-    let displayQ = question.q;
-    if (questionType === "words") displayQ = `اول واحد يكتب: ${question.q}`;
-    else if (questionType === "tf") displayQ = `جاوب بصح أو غلط: ${question.q}`;
-
-    await msg.channel.send(`سؤال ${i + 1}:\n${displayQ}`);
-
-    // فلتر الإجابة
-    const filter = m => {
-      if (m.author.bot) return false;
-      if (questionType === "tf") return ["صح", "غلط"].includes(m.content);
-      else if (questionType === "words") return m.content === question.word;
-      else return question.a.includes(m.content);
-    };
-
-    try {
-      const collected = await msg.channel.awaitMessages({ filter, max: 1, time: 30000, errors: ["time"] });
-      const winner = collected.first().author;
-
-      // زيادة النقاط
-      points[winner.id] = (points[winner.id] || 0) + 1;
-      dailyScores[winner.id] = (dailyScores[winner.id] || 0) + 1;
-
-      await collected.first().reply(`✅ صح! حصلت على نقطة.`);
-    } catch {
-      if (questionType === "tf" || questionType === "qna") await msg.channel.send(`انتهى الوقت! الإجابة الصحيحة: ${question.a.join(", ")}`);
-      else if (questionType === "words") await msg.channel.send(`انتهى الوقت! الإجابة الصحيحة: ${question.word}`);
+    if (available.length < 20) {
+      quizRunning = false;
+      return msg.reply("لا يوجد 20 سؤال غير مكرر");
     }
 
-    await new Promise(res => setTimeout(res, 1000));
+    msg.channel.send("بدأت فعالية الأسئلة");
+
+    let dailyScores = {}; // نقاط الفعالية لهذا اليوم
+
+    for (let i = 0; i < 20; i++) {
+      if (!quizRunning) break;
+
+      const qIndex = Math.floor(Math.random() * available.length);
+      const question = available[qIndex];
+      const realIndex = QUESTIONS.indexOf(question);
+
+      used.push(realIndex);
+      available.splice(qIndex, 1);
+      saveJSON(usedQPath, used);
+
+      // تحديد نوع السؤال
+      let questionType = "qna"; // افتراضي
+      if (question.type) questionType = question.type;
+      else if (["صح", "غلط"].includes(question.a?.[0])) questionType = "tf"; 
+      else if (question.word) questionType = "words";
+
+      // عرض السؤال
+      let displayQ = question.q || "لا يوجد سؤال محدد";
+      if (questionType === "words") displayQ = `اول واحد يكتب: ${question.q}`;
+      else if (questionType === "tf") displayQ = `جاوب بصح أو غلط: ${question.q}`;
+
+      await msg.channel.send(`سؤال ${i + 1}:\n${displayQ}`);
+
+      // فلتر الإجابة
+      const filter = m => {
+        if (m.author.bot) return false;
+        if (questionType === "tf") return ["صح", "غلط"].includes(m.content);
+        else if (questionType === "words") return m.content === question.word;
+        else return question.a && Array.isArray(question.a) && question.a.includes(m.content);
+      };
+
+      try {
+        const collected = await msg.channel.awaitMessages({ filter, max: 1, time: 30000, errors: ["time"] });
+        const winnerMsg = collected.first();
+        const winner = winnerMsg.author;
+
+        // زيادة النقاط
+        points[winner.id] = (points[winner.id] || 0) + 1;
+        dailyScores[winner.id] = (dailyScores[winner.id] || 0) + 1;
+
+        // رد مباشرة على رسالة الفائز
+        await winnerMsg.reply(`✅ صح! حصلت على نقطة.`);
+      } catch {
+        if (questionType === "words" && question.word) {
+          await msg.channel.send(`انتهى الوقت! الإجابة الصحيحة: ${question.word}`);
+        } else if (question.a && Array.isArray(question.a)) {
+          await msg.channel.send(`انتهى الوقت! الإجابة الصحيحة: ${question.a.join(", ")}`);
+        } else {
+          await msg.channel.send(`انتهى الوقت! لا يوجد إجابة محددة لهذا السؤال.`);
+        }
+      }
+
+      await new Promise(res => setTimeout(res, 1000));
+    }
+
+    // حفظ النقاط
+    saveJSON(pointsPath, points);
+    saveJSON(dailyPointsPath, dailyScores);
+
+    // ترتيب أفضل المشاركين
+    const sortedDaily = Object.entries(dailyScores)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([id, c], i) => `${i + 1}. <@${id}> — ${c}`);
+
+    msg.channel.send(`انتهت الفعالية. أفضل المشاركين اليوم:\n${sortedDaily.join("\n")}`);
+    quizRunning = false;
   }
 
-  // حفظ النقاط
-  saveJSON(pointsPath, points);
-  saveJSON(dailyPointsPath, dailyScores);
-
-  // ترتيب أفضل المشاركين
-  const sortedDaily = Object.entries(dailyScores)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([id, c], i) => `${i + 1}. <@${id}> — ${c}`);
-
-  msg.channel.send(`انتهت الفعالية. أفضل المشاركين اليوم:\n${sortedDaily.join("\n")}`);
-  quizRunning = false;
-}
   // إيقاف الفعالية
   if (msg.content === "إيقاف فعاليه") {
     if (msg.author.id !== ADMIN_ID) return msg.reply("هذا الأمر للأدمن فقط");
