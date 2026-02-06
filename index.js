@@ -29,8 +29,9 @@ let attendanceToday = new Set();
 let attendanceOpen = false;
 let quizRunning = false;
 
-// تحميل الأسئلة
-const QUESTIONS = require(questionsPath);
+// ---- تحميل الأسئلة ----
+const { qna, tf, words } = require(questionsPath); // استدعاء الثلاث مصفوفات
+const QUESTIONS = [...qna, ...tf, ...words];        // دمجهم في مصفوفة وحدة
 
 // دوال مساعدة
 function loadJSON(path, def) {
