@@ -224,9 +224,10 @@ async function startQuiz(msg) {
 
     await msg.channel.send(`سؤال ${i + 1}:\n${displayQ}`);
 
-    // ===== التعديل =====
+    // إنشاء Collector للرسائل
     const filter = m => !m.author.bot;
     const collector = msg.channel.createMessageCollector({ filter, time: 30000 });
+
     let answered = false;
 
     collector.on("collect", async m => {
@@ -236,9 +237,9 @@ async function startQuiz(msg) {
       let correct = false;
 
       if (questionType === "tf") {
-        correct = Array.isArray(question.a) 
-                  ? question.a.some(a => a.trim().toLowerCase() === answer) 
-                  : answer === question.a.toLowerCase();
+        correct = Array.isArray(question.a)
+          ? question.a.some(a => a.trim().toLowerCase() === answer)
+          : answer === question.a.toLowerCase();
       } else if (questionType === "words") {
         correct = answer === question.word.trim().toLowerCase();
       } else if (questionType === "qna") {
@@ -249,7 +250,7 @@ async function startQuiz(msg) {
         answered = true;
         collector.stop();
 
-        // تسجيل النقاط
+        // تسجيل النقاط فورًا
         points[m.author.id] = (points[m.author.id] || 0) + 1;
         dailyScores[m.author.id] = (dailyScores[m.author.id] || 0) + 1;
         saveJSON(pointsPath, points);
@@ -269,8 +270,8 @@ async function startQuiz(msg) {
       }
     });
 
-    // ننتظر انتهاء Collector قبل السؤال التالي
-    await new Promise(res => setTimeout(res, 31000));
+    // لا نحتاج await أو setTimeout هنا، Collector يدير نفسه
+    await new Promise(res => collector.once("end", res));
   }
 
   // بعد انتهاء جميع الأسئلة
@@ -282,7 +283,6 @@ async function startQuiz(msg) {
   await msg.channel.send(`انتهت الفعالية. أفضل المشاركين اليوم:\n${sortedDaily.join("\n")}`);
   quizRunning = false;
 }
-
 // ---- كرون: إعلان الفائز النهائي نهاية رمضان ----
 cron.schedule("0 0 20 3 *", async () => {
   const ch = await client.channels.fetch(CHANNEL_ID);
