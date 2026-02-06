@@ -160,10 +160,13 @@ client.on("messageCreate", async msg => {
   }
 
  // ---- فعالية الأسئلة ----
-if (msg.content.toLowerCase().includes("فعاليه")) {
+
+ if (msg.content.trim().toLowerCase() === "فعاليه") {
   if (msg.author.id !== ADMIN_ID) return msg.reply("هذا الأمر للأدمن فقط");
   if (quizRunning) return msg.reply("الفعالية شغالة حاليًا");
 
+  // باقي كود الفعالية
+   
   quizRunning = true;
   let available = QUESTIONS.filter((_, i) => !used.includes(i));
 
