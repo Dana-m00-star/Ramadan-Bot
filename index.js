@@ -157,230 +157,85 @@ client.on("messageCreate", async msg => {
     );
   }
 
-  // ---- فعالية الأسئلة ----
- if (msg.content.toLowerCase().includes("فعاليه")) {
-    if (msg.author.id !== ADMIN_ID) return msg.reply("هذا الأمر للأدمن فقط");
-    if (quizRunning) return msg.reply("الفعالية شغالة حاليًا");
+ // ---- فعالية الأسئلة ----
+if (msg.content.toLowerCase().includes("فعاليه")) {
+  if (msg.author.id !== ADMIN_ID) return msg.reply("هذا الأمر للأدمن فقط");
+  if (quizRunning) return msg.reply("الفعالية شغالة حاليًا");
 
-    quizRunning = true;
-    let available = QUESTIONS.filter((_, i) => !used.includes(i));
+  quizRunning = true;
+  let available = QUESTIONS.filter((_, i) => !used.includes(i));
 
-    if (available.length < 20) {
-      quizRunning = false;
-      return msg.reply("لا يوجد 20 سؤال غير مكرر");
-    }
-
-    msg.channel.send("بدأت فعالية الأسئلة");
-
-    let dailyScores = {}; // نقاط الفعالية لهذا اليوم
-
-    for (let i = 0; i < 20; i++) {
-      if (!quizRunning) break;
-
-      const qIndex = Math.floor(Math.random() * available.length);
-      const question = available[qIndex];
-      const realIndex = QUESTIONS.indexOf(question);
-
-      used.push(realIndex);
-      available.splice(qIndex, 1);
-      saveJSON(usedQPath, used);
-
-      // تحديد نوع السؤال
-      let questionType = "qna"; // افتراضي
-      if (question.type) questionType = question.type;
-      else if (["صح", "غلط"].includes(question.a?.[0])) questionType = "tf"; 
-      else if (question.word) questionType = "words";
-
-      // عرض السؤال
-      let displayQ = question.q;
-      if (questionType === "words") displayQ = `اول واحد يكتب: ${question.q}`;
-      else if (questionType === "tf") displayQ = `جاوب بصح أو غلط: ${question.q}`;
-
-      await msg.channel.send(`سؤال ${i + 1}:\n${displayQ}`);
-
-      // فلتر الإجابة
-      const filter = m => {
-        if (m.author.bot) return false;
-        if (questionType === "tf") return ["صح", "غلط"].includes(m.content);
-        else if (questionType === "words") return m.content === question.word;
-        else return question.a.includes(m.content);
-      };
-
-      try {
-  const collected = await msg.channel.awaitMessages({ filter, max: 1, time: 30000, errors: ["time"] });
-  const winner = collected.first().author;
-   // ---- فعالية الأسئلة ----
- if (msg.content.toLowerCase().includes("فعاليه")) {
-    if (msg.author.id !== ADMIN_ID) return msg.reply("هذا الأمر للأدمن فقط");
-    if (quizRunning) return msg.reply("الفعالية شغالة حاليًا");
-
-    quizRunning = true;
-    let available = QUESTIONS.filter((_, i) => !used.includes(i));
-
-    if (available.length < 20) {
-      quizRunning = false;
-      return msg.reply("لا يوجد 20 سؤال غير مكرر");
-    }
-
-    msg.channel.send("بدأت فعالية الأسئلة");
-
-    let dailyScores = {}; // نقاط الفعالية لهذا اليوم
-
-    for (let i = 0; i < 20; i++) {
-      if (!quizRunning) break;
-
-      const qIndex = Math.floor(Math.random() * available.length);
-      const question = available[qIndex];
-      const realIndex = QUESTIONS.indexOf(question);
-
-      used.push(realIndex);
-      available.splice(qIndex, 1);
-      saveJSON(usedQPath, used);
-
-      // تحديد نوع السؤال
-      let questionType = "qna"; // افتراضي
-      if (question.type) questionType = question.type;
-      else if (["صح", "غلط"].includes(question.a?.[0])) questionType = "tf"; 
-      else if (question.word) questionType = "words";
-
-      // عرض السؤال
-      let displayQ = question.q;
-      if (questionType === "words") displayQ = `اول واحد يكتب: ${question.q}`;
-      else if (questionType === "tf") displayQ = `جاوب بصح أو غلط: ${question.q}`;
-
-      await msg.channel.send(`سؤال ${i + 1}:\n${displayQ}`);
-
-      // فلتر الإجابة
-      const filter = m => {
-        if (m.author.bot) return false;
-        if (questionType === "tf") return ["صح", "غلط"].includes(m.content);
-        else if (questionType === "words") return m.content === question.word;
-        else return question.a.includes(m.content);
-      };
-
-      try {
-  const collected = await msg.channel.awaitMessages({ filter, max: 1, time: 30000, errors: ["time"] });
-  const winner = collected.first().author;
-    // ---- فعالية الأسئلة ----
- if (msg.content.toLowerCase().includes("فعاليه")) {
-    if (msg.author.id !== ADMIN_ID) return msg.reply("هذا الأمر للأدمن فقط");
-    if (quizRunning) return msg.reply("الفعالية شغالة حاليًا");
-
-    quizRunning = true;
-    let available = QUESTIONS.filter((_, i) => !used.includes(i));
-
-    if (available.length < 20) {
-      quizRunning = false;
-      return msg.reply("لا يوجد 20 سؤال غير مكرر");
-    }
-
-    msg.channel.send("بدأت فعالية الأسئلة");
-
-    let dailyScores = {}; // نقاط الفعالية لهذا اليوم
-
-    for (let i = 0; i < 20; i++) {
-      if (!quizRunning) break;
-
-      const qIndex = Math.floor(Math.random() * available.length);
-      const question = available[qIndex];
-      const realIndex = QUESTIONS.indexOf(question);
-
-      used.push(realIndex);
-      available.splice(qIndex, 1);
-      saveJSON(usedQPath, used);
-
-      // تحديد نوع السؤال
-      let questionType = "qna"; // افتراضي
-      if (question.type) questionType = question.type;
-      else if (["صح", "غلط"].includes(question.a?.[0])) questionType = "tf"; 
-      else if (question.word) questionType = "words";
-
-      // عرض السؤال
-      let displayQ = question.q;
-      if (questionType === "words") displayQ = `اول واحد يكتب: ${question.q}`;
-      else if (questionType === "tf") displayQ = `جاوب بصح أو غلط: ${question.q}`;
-
-      await msg.channel.send(`سؤال ${i + 1}:\n${displayQ}`);
-
-      // فلتر الإجابة
-      const filter = m => {
-        if (m.author.bot) return false;
-        if (questionType === "tf") return ["صح", "غلط"].includes(m.content);
-        else if (questionType === "words") return m.content === question.word;
-        else return question.a.includes(m.content);
-      };
-
-      try {
-  const collected = await msg.channel.awaitMessages({ filter, max: 1, time: 30000, errors: ["time"] });
-  const winner = collected.first().author;
-  points[winner.id] = (points[winner.id] || 0) + 1;
-
-  // الرد مباشر على الشخص بدون ذكر نقاط اليوم
-  await collected.first().reply(`✅ صح! حصلت على نقطة.`);
-} catch {
-  if (questionType === "tf" || questionType === "qna") await msg.channel.send(`انتهى الوقت! الإجابة الصحيحة: ${question.a.join(", ")}`);
-  else if (questionType === "words") await msg.channel.send(`انتهى الوقت! الإجابة الصحيحة: ${question.word}`);
-}
-    
-      await new Promise(res => setTimeout(res, 1000));
-    }
-
-    // حفظ النقاط بعد الفعالية
-    saveJSON(pointsPath, points);
-    saveJSON(dailyPointsPath, dailyScores);
-
-    // ترتيب أفضل المشاركين
-    const sortedDaily = Object.entries(dailyScores)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([id, c], i) => `${i + 1}. <@${id}> — ${c}`);
-
-    msg.channel.send(`انتهت الفعالية. أفضل المشاركين اليوم:\n${sortedDaily.join("\n")}`);
+  if (available.length < 20) {
     quizRunning = false;
-  }
-} catch {
-  if (questionType === "tf" || questionType === "qna") await msg.channel.send(`انتهى الوقت! الإجابة الصحيحة: ${question.a.join(", ")}`);
-  else if (questionType === "words") await msg.channel.send(`انتهى الوقت! الإجابة الصحيحة: ${question.word}`);
-}
-    
-      await new Promise(res => setTimeout(res, 1000));
-    }
-
-    // حفظ النقاط بعد الفعالية
-    saveJSON(pointsPath, points);
-    saveJSON(dailyPointsPath, dailyScores);
-
-    // ترتيب أفضل المشاركين
-    const sortedDaily = Object.entries(dailyScores)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([id, c], i) => `${i + 1}. <@${id}> — ${c}`);
-
-    msg.channel.send(`انتهت الفعالية. أفضل المشاركين اليوم:\n${sortedDaily.join("\n")}`);
-    quizRunning = false;
-  }
-} catch {
-  if (questionType === "tf" || questionType === "qna") await msg.channel.send(`انتهى الوقت! الإجابة الصحيحة: ${question.a.join(", ")}`);
-  else if (questionType === "words") await msg.channel.send(`انتهى الوقت! الإجابة الصحيحة: ${question.word}`);
-}
-    
-      await new Promise(res => setTimeout(res, 1000));
-    }
-
-    // حفظ النقاط بعد الفعالية
-    saveJSON(pointsPath, points);
-    saveJSON(dailyPointsPath, dailyScores);
-
-    // ترتيب أفضل المشاركين
-    const sortedDaily = Object.entries(dailyScores)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([id, c], i) => `${i + 1}. <@${id}> — ${c}`);
-
-    msg.channel.send(`انتهت الفعالية. أفضل المشاركين اليوم:\n${sortedDaily.join("\n")}`);
-    quizRunning = false;
+    return msg.reply("لا يوجد 20 سؤال غير مكرر");
   }
 
+  msg.channel.send("بدأت فعالية الأسئلة");
+
+  let dailyScores = {}; // نقاط الفعالية لهذا اليوم
+
+  for (let i = 0; i < 20; i++) {
+    if (!quizRunning) break;
+
+    const qIndex = Math.floor(Math.random() * available.length);
+    const question = available[qIndex];
+    const realIndex = QUESTIONS.indexOf(question);
+
+    used.push(realIndex);
+    available.splice(qIndex, 1);
+    saveJSON(usedQPath, used);
+
+    // تحديد نوع السؤال
+    let questionType = "qna"; // افتراضي
+    if (question.type) questionType = question.type;
+    else if (["صح", "غلط"].includes(question.a?.[0])) questionType = "tf"; 
+    else if (question.word) questionType = "words";
+
+    // عرض السؤال
+    let displayQ = question.q;
+    if (questionType === "words") displayQ = `اول واحد يكتب: ${question.q}`;
+    else if (questionType === "tf") displayQ = `جاوب بصح أو غلط: ${question.q}`;
+
+    await msg.channel.send(`سؤال ${i + 1}:\n${displayQ}`);
+
+    // فلتر الإجابة
+    const filter = m => {
+      if (m.author.bot) return false;
+      if (questionType === "tf") return ["صح", "غلط"].includes(m.content);
+      else if (questionType === "words") return m.content === question.word;
+      else return question.a.includes(m.content);
+    };
+
+    try {
+      const collected = await msg.channel.awaitMessages({ filter, max: 1, time: 30000, errors: ["time"] });
+      const winner = collected.first().author;
+
+      // زيادة النقاط
+      points[winner.id] = (points[winner.id] || 0) + 1;
+      dailyScores[winner.id] = (dailyScores[winner.id] || 0) + 1;
+
+      await collected.first().reply(`✅ صح! حصلت على نقطة.`);
+    } catch {
+      if (questionType === "tf" || questionType === "qna") await msg.channel.send(`انتهى الوقت! الإجابة الصحيحة: ${question.a.join(", ")}`);
+      else if (questionType === "words") await msg.channel.send(`انتهى الوقت! الإجابة الصحيحة: ${question.word}`);
+    }
+
+    await new Promise(res => setTimeout(res, 1000));
+  }
+
+  // حفظ النقاط
+  saveJSON(pointsPath, points);
+  saveJSON(dailyPointsPath, dailyScores);
+
+  // ترتيب أفضل المشاركين
+  const sortedDaily = Object.entries(dailyScores)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([id, c], i) => `${i + 1}. <@${id}> — ${c}`);
+
+  msg.channel.send(`انتهت الفعالية. أفضل المشاركين اليوم:\n${sortedDaily.join("\n")}`);
+  quizRunning = false;
+}
   // إيقاف الفعالية
   if (msg.content === "إيقاف فعاليه") {
     if (msg.author.id !== ADMIN_ID) return msg.reply("هذا الأمر للأدمن فقط");
