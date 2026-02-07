@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
+const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require("discord.js");
 const cron = require("node-cron");
 const fs = require("fs");
 
@@ -79,12 +79,17 @@ cron.schedule("0 23 * * *", async () => {
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId("attend")
-      .setLabel("صليت")
+      .setLabel("حاضر")
       .setStyle(ButtonStyle.Success)
   );
 
+  const embed = new EmbedBuilder()
+    .setTitle("تحضير التراويح 🕌")
+    .setDescription("@everyone اضغط على زر **حاضر** لتسجيل حضورك خلال 30 دقيقة")
+    .setColor("Blue");
+
   const msg = await ch.send({
-    content: "@everyone تحضير اللي صلى التراويح. اضغط صليت خلال 30 دقيقة",
+    embeds: [embed],
     components: [row]
   });
 
@@ -106,14 +111,12 @@ cron.schedule("0 23 * * *", async () => {
 
     await msg.edit({ components: [] });
 
-    ch.send(`نتائج التحضير – ${getRamadanDay()}
+    const resultEmbed = new EmbedBuilder()
+      .setTitle(`نتائج التحضير – ${getRamadanDay()}`)
+      .setDescription(`عدد الحاضرين: **${attendanceToday.size}**\n\nالحاضرين:\n${mentions.join("\n") || "-"}\n\n+1 نقطة لكل حاضر`)
+      .setColor("Green");
 
-عدد الحاضرين: ${attendanceToday.size}
-
-الحاضرين:
-${mentions.join("\n") || "-"}
-
-+1 نقطة لكل حاضر`);
+    ch.send({ embeds: [resultEmbed] });
   }, 30 * 60 * 1000);
 }, { timezone: "Asia/Riyadh" });
 
@@ -126,7 +129,7 @@ client.on("interactionCreate", async i => {
   if (attendanceToday.has(i.user.id)) return i.reply({ content: "مسجل مسبقًا", ephemeral: true });
 
   attendanceToday.add(i.user.id);
-  i.reply({ content: "تم تسجيل حضورك", ephemeral: true });
+  i.reply({ content: "تم تسجيل حضورك ✅", ephemeral: true });
 });
 
 // ---- أوامر المستخدمين ----
@@ -150,27 +153,50 @@ client.on("messageCreate", async msg => {
   const used = loadJSON(usedQPath, []);
   const dailyPoints = loadJSON(dailyPointsPath, {});
 
-  // نقاطي
+  // ---- نقاطي في Embed ----
   if (msg.content.trim() === "نقاطي") {
-    msg.reply(`نقاطك الحالية: ${points[msg.author.id] || 0}`);
+    const embed = new EmbedBuilder()
+      .setColor("Blue")
+      .setTitle("نقاطك 🎯")
+      .setDescription(`لديك **${points[msg.author.id] || 0}** نقطة`)
+      .setThumbnail(msg.author.displayAvatarURL());
+    msg.reply({ embeds: [embed] });
   }
 
-  // توب حضور
+  // ---- توب حضور في Embed ----
   if (msg.content.trim() === "توب حضور") {
-    const sorted = Object.entries(attendance).sort((a, b) => b[1] - a[1]).slice(0, 5);
-    msg.reply(
-      "توب حضور\n" +
-      sorted.map(([id, c], i) => `${i + 1}. <@${id}> — ${c}`).join("\n")
-    );
+    const sorted = Object.entries(attendance)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+
+    const embed = new EmbedBuilder()
+      .setColor("Green")
+      .setTitle("🏆 توب حضور")
+      .setDescription(
+        sorted.length
+          ? sorted.map(([id, c], i) => `${i + 1}. <@${id}> — ${c}`).join("\n")
+          : "لا يوجد بيانات"
+      );
+
+    msg.reply({ embeds: [embed] });
   }
 
-  // توب نقاط
+  // ---- توب نقاط في Embed ----
   if (msg.content.trim() === "توب نقاط") {
-    const sorted = Object.entries(points).sort((a, b) => b[1] - a[1]).slice(0, 5);
-    msg.reply(
-      "توب نقاط\n" +
-      sorted.map(([id, c], i) => `${i + 1}. <@${id}> — ${c}`).join("\n")
-    );
+    const sorted = Object.entries(points)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+
+    const embed = new EmbedBuilder()
+      .setColor("Gold")
+      .setTitle("⭐ توب نقاط")
+      .setDescription(
+        sorted.length
+          ? sorted.map(([id, c], i) => `${i + 1}. <@${id}> — ${c}`).join("\n")
+          : "لا يوجد بيانات"
+      );
+
+    msg.reply({ embeds: [embed] });
   }
 
   // ---- فعالية الأسئلة ----
@@ -183,8 +209,7 @@ client.on("messageCreate", async msg => {
 
   // إيقاف الفعالية
   if (msg.content.trim() === "إيقاف فعاليه") {
-    if (msg.author.id !== ADMIN_ID) return msg.reply("هذا الأمر للأدمن فقط");
-    if (!quizRunning) return msg.reply("لا توجد فعالية شغالة حاليًا");
+    if (msg.author.id !== ADMIN_ID) return msg.reply("لا توجد فعالية شغالة حاليًا");
 
     quizRunning = false;
     msg.reply("تم إيقاف الفعالية");
@@ -195,7 +220,6 @@ client.on("messageCreate", async msg => {
 async function startQuiz(msg) {
   quizRunning = true;
 
-  // تحميل البيانات
   const points = loadJSON(pointsPath, {});
   const used = loadJSON(usedQPath, []);
   const dailyScores = loadJSON(dailyPointsPath, {});
@@ -220,81 +244,60 @@ async function startQuiz(msg) {
     available.splice(qIndex, 1);
     saveJSON(usedQPath, used);
 
-    // تحديد نوع السؤال
     let questionType = "qna";
     if (question.type) questionType = question.type;
     else if (["صح", "غلط"].includes(question.a?.[0])) questionType = "tf";
     else if (question.word) questionType = "words";
 
-    // عرض السؤال
     let displayQ;
     if (questionType === "words")
-      displayQ = ` اول واحد يكتب:\n${question.word}`;
+      displayQ = `اول واحد يكتب:\n${question.word}`;
     else if (questionType === "tf")
-      displayQ = ` جاوب بصح أو غلط:\n${question.q}`;
+      displayQ = `جاوب بصح أو غلط:\n${question.q}`;
     else
-      displayQ = ` ${question.q}`;
+      displayQ = question.q;
 
-    await msg.channel.send(`**سؤال ${i + 1}:**\n${displayQ}`);
+    const embed = new EmbedBuilder()
+      .setColor("Blue")
+      .setTitle(`سؤال ${i + 1}`)
+      .setDescription(displayQ);
 
-    // ---- Collector ----
+    const qMessage = await msg.channel.send({ embeds: [embed] });
+
     const filter = m => !m.author.bot;
-    const collector = msg.channel.createMessageCollector({
-      filter,
-      time: 30000
-    });
+    const collector = msg.channel.createMessageCollector({ filter, time: 30000 });
 
     let answered = false;
-
-    const normalize = txt =>
-      txt
-        .toString()
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, " ");
+    const normalize = txt => txt.toString().trim().toLowerCase().replace(/\s+/g, " ");
 
     collector.on("collect", async m => {
-      if (!quizRunning) {
-        collector.stop();
-        return;
-      }
-
-      console.log("📩", m.author.username, ":", m.content);
+      if (!quizRunning) return collector.stop();
 
       const answer = normalize(m.content);
       let correct = false;
 
       if (questionType === "tf") {
-        if (Array.isArray(question.a)) {
-          correct = question.a.some(a => normalize(a) === answer);
-        } else {
-          correct = normalize(question.a) === answer;
-        }
-      }
-
-      else if (questionType === "words") {
+        correct = Array.isArray(question.a)
+          ? question.a.some(a => normalize(a) === answer)
+          : normalize(question.a) === answer;
+      } else if (questionType === "words") {
         correct = normalize(question.word) === answer;
-      }
-
-      else if (questionType === "qna") {
-        if (Array.isArray(question.a)) {
-          correct = question.a.some(a => normalize(a) === answer);
-        }
+      } else if (questionType === "qna") {
+        correct = Array.isArray(question.a) ? question.a.some(a => normalize(a) === answer) : false;
       }
 
       if (correct && !answered) {
         answered = true;
 
-        // ➕ إضافة النقاط
         points[m.author.id] = (points[m.author.id] || 0) + 1;
         dailyScores[m.author.id] = (dailyScores[m.author.id] || 0) + 1;
 
         saveJSON(pointsPath, points);
         saveJSON(dailyPointsPath, dailyScores);
 
-        await m.reply("✅ **صح!** حصلت على نقطة ");
+        await m.reply("✅ **صح!** حصلت على نقطة");
 
-        collector.stop("answered");
+        collector.stop();
       }
     });
 
@@ -302,10 +305,8 @@ async function startQuiz(msg) {
       collector.on("end", async () => {
         if (!answered && quizRunning) {
           await msg.channel.send(
-            ` انتهى الوقت!\n**الإجابة الصحيحة:** ${
-              Array.isArray(question.a)
-                ? question.a.join("، ")
-                : question.a || question.word
+            `انتهى الوقت!\n**الإجابة الصحيحة:** ${
+              Array.isArray(question.a) ? question.a.join("، ") : question.a || question.word
             }`
           );
         }
@@ -314,15 +315,17 @@ async function startQuiz(msg) {
     });
   }
 
-  // ---- نتائج اليوم ----
   const sortedDaily = Object.entries(dailyScores)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
     .map(([id, c], i) => `${i + 1}. <@${id}> — ${c} نقطة`);
 
-  await msg.channel.send(
-    `🏁 **انتهت الفعالية**\n\n🏆 أفضل المشاركين اليوم:\n${sortedDaily.join("\n") || "لا أحد"}`
-  );
+  const embedResult = new EmbedBuilder()
+    .setColor("Gold")
+    .setTitle("🏁 انتهت الفعالية")
+    .setDescription(`🏆 أفضل المشاركين اليوم:\n${sortedDaily.join("\n") || "لا أحد"}`);
+
+  await msg.channel.send({ embeds: [embedResult] });
 
   quizRunning = false;
 }
