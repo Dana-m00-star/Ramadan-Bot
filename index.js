@@ -59,14 +59,14 @@ function getRamadanDay() {
 cron.schedule("0 0 18 2 *", async () => {
   const ch = await client.channels.fetch(CHANNEL_ID);
   ch.send("@everyone 💚 رمضان كريم ومبارك عليكم الشهر");
-});
+}, { timezone: "Asia/Riyadh" });
 
 // ---- كرون: تنبيه قبل التحضير 10 دقائق ----
 cron.schedule("50 22 * * *", async () => {
   if (!isRamadan()) return;
   const ch = await client.channels.fetch(CHANNEL_ID);
   ch.send("@everyone باقي 10 دقائق على تحضير التراويح");
-});
+}, { timezone: "Asia/Riyadh" });
 
 // ---- كرون: التحضير اليومي الساعة 23:00 ----
 cron.schedule("0 23 * * *", async () => {
@@ -115,7 +115,7 @@ ${mentions.join("\n") || "-"}
 
 +1 نقطة لكل حاضر`);
   }, 30 * 60 * 1000);
-});
+}, { timezone: "Asia/Riyadh" });
 
 // ---- تسجيل الحضور بالزر ----
 client.on("interactionCreate", async i => {
@@ -346,7 +346,7 @@ cron.schedule("0 0 20 3 *", async () => {
 
 أعلى الحضور: <@${topAttendanceId}> — ${topAttendanceCount}
 أعلى نقاط الفعالية: <@${topDailyId}> — ${topDailyCount}`);
-});
+}, { timezone: "Asia/Riyadh" });
 
 // ---- تشغيل البوت ----
 client.once("clientReady", () => {
