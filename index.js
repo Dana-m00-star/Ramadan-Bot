@@ -58,7 +58,7 @@ function getRamadanDay() {
 // ---- كرون: رسالة أول يوم رمضان ----
 cron.schedule("0 0 18 2 *", async () => {
   const ch = await client.channels.fetch(CHANNEL_ID);
-  ch.send("@everyone 💚 رمضان كريم ومبارك عليكم الشهر حبايبي");
+  ch.send("@everyone 💚رمضان كريم ومبارك عليكم الشهر حبايبي");
 }, { timezone: "Asia/Riyadh" });
 
 // ---- كرون: تنبيه قبل التحضير 10 دقائق ----
@@ -136,7 +136,6 @@ client.on("interactionCreate", async i => {
 client.on("messageCreate", async msg => {
   if (msg.author.bot) return;
 
-  // سجل كل رسالة في الـ Console
   console.log({
     server: msg.guild ? msg.guild.name : "DM",
     serverId: msg.guild ? msg.guild.id : "DM",
@@ -153,7 +152,6 @@ client.on("messageCreate", async msg => {
   const used = loadJSON(usedQPath, []);
   const dailyPoints = loadJSON(dailyPointsPath, {});
 
-  // ---- نقاطي في Embed ----
   if (msg.content.trim() === "نقاطي") {
     const embed = new EmbedBuilder()
       .setColor("Blue")
@@ -163,7 +161,6 @@ client.on("messageCreate", async msg => {
     msg.reply({ embeds: [embed] });
   }
 
-  // ---- توب حضور في Embed ----
   if (msg.content.trim() === "توب حضور") {
     const sorted = Object.entries(attendance)
       .sort((a, b) => b[1] - a[1])
@@ -181,7 +178,6 @@ client.on("messageCreate", async msg => {
     msg.reply({ embeds: [embed] });
   }
 
-  // ---- توب نقاط في Embed ----
   if (msg.content.trim() === "توب نقاط") {
     const sorted = Object.entries(points)
       .sort((a, b) => b[1] - a[1])
@@ -199,7 +195,6 @@ client.on("messageCreate", async msg => {
     msg.reply({ embeds: [embed] });
   }
 
-  // ---- فعالية الأسئلة ----
   if (msg.content.trim() === "فعاليه") {
     if (msg.author.id !== ADMIN_ID) return msg.reply("هذا الأمر للأدمن فقط");
     if (quizRunning) return msg.reply("الفعالية شغالة حاليًا");
@@ -207,7 +202,6 @@ client.on("messageCreate", async msg => {
     startQuiz(msg);
   }
 
-  // إيقاف الفعالية
   if (msg.content.trim() === "إيقاف فعاليه") {
     if (msg.author.id !== ADMIN_ID) return msg.reply("لا توجد فعالية شغالة حاليًا");
 
@@ -283,7 +277,9 @@ async function startQuiz(msg) {
       } else if (questionType === "words") {
         correct = normalize(question.word) === answer;
       } else if (questionType === "qna") {
-        correct = Array.isArray(question.a) ? question.a.some(a => normalize(a) === answer) : false;
+        correct = Array.isArray(question.a)
+          ? question.a.some(a => normalize(a) === answer)
+          : false;
       }
 
       if (correct && !answered) {
@@ -295,7 +291,14 @@ async function startQuiz(msg) {
         saveJSON(pointsPath, points);
         saveJSON(dailyPointsPath, dailyScores);
 
-        await m.reply("✅ **صح!** حصلت على نقطة");
+        const winEmbed = EmbedBuilder.from(embed)
+          .setColor("Green")
+          .addFields({
+            name: "✅ تمت الإجابة",
+            value: `جاوب <@${m.author.id}> وتمت إضافة نقطة `
+          });
+
+        await qMessage.edit({ embeds: [winEmbed] });
 
         collector.stop();
       }
@@ -304,11 +307,16 @@ async function startQuiz(msg) {
     await new Promise(resolve => {
       collector.on("end", async () => {
         if (!answered && quizRunning) {
-          await msg.channel.send(
-            `انتهى الوقت!\n**الإجابة الصحيحة:** ${
-              Array.isArray(question.a) ? question.a.join("، ") : question.a || question.word
-            }`
-          );
+          const loseEmbed = EmbedBuilder.from(embed)
+            .setColor("Red")
+            .addFields({
+              name: "⏰ انتهى الوقت",
+              value: `الإجابة الصحيحة: **${
+                Array.isArray(question.a) ? question.a.join("، ") : question.a || question.word
+              }**`
+            });
+
+          await qMessage.edit({ embeds: [loseEmbed] });
         }
         resolve();
       });
