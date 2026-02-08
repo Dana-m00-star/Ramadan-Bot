@@ -88,10 +88,7 @@ cron.schedule("0 23 * * *", async () => {
     .setDescription("@everyone اضغط على زر **حاضر** لتسجيل حضورك خلال 30 دقيقة")
     .setColor("Blue");
 
-  const msg = await ch.send({
-    embeds: [embed],
-    components: [row]
-  });
+  const msg = await ch.send({ embeds: [embed], components: [row] });
 
   setTimeout(async () => {
     attendanceOpen = false;
@@ -136,22 +133,12 @@ client.on("interactionCreate", async i => {
 client.on("messageCreate", async msg => {
   if (msg.author.bot) return;
 
-  console.log({
-    server: msg.guild ? msg.guild.name : "DM",
-    serverId: msg.guild ? msg.guild.id : "DM",
-    channel: msg.channel.name,
-    channelId: msg.channel.id,
-    user: msg.author.username,
-    userId: msg.author.id,
-    content: msg.content,
-    date: new Date().toISOString()
-  });
-
   const points = loadJSON(pointsPath, {});
   const attendance = loadJSON(attendancePath, {});
   const used = loadJSON(usedQPath, []);
   const dailyPoints = loadJSON(dailyPointsPath, {});
 
+  // عرض نقاط المستخدم
   if (msg.content.trim() === "نقاطي") {
     const embed = new EmbedBuilder()
       .setColor("Blue")
@@ -161,6 +148,7 @@ client.on("messageCreate", async msg => {
     msg.reply({ embeds: [embed] });
   }
 
+  // توب حضور
   if (msg.content.trim() === "توب حضور") {
     const sorted = Object.entries(attendance)
       .sort((a, b) => b[1] - a[1])
@@ -178,6 +166,7 @@ client.on("messageCreate", async msg => {
     msg.reply({ embeds: [embed] });
   }
 
+  // توب نقاط
   if (msg.content.trim() === "توب نقاط") {
     const sorted = Object.entries(points)
       .sort((a, b) => b[1] - a[1])
@@ -195,16 +184,17 @@ client.on("messageCreate", async msg => {
     msg.reply({ embeds: [embed] });
   }
 
+  // بدء الفعالية
   if (msg.content.trim() === "فعاليه") {
-    if (msg.author.id !== ADMIN_ID) return msg.reply("هذا الأمر للأدمن فقط");
+    if (msg.author.id !== ADMIN_ID) return;
     if (quizRunning) return msg.reply("الفعالية شغالة حاليًا");
-
     startQuiz(msg);
   }
 
+  // إيقاف الفعالية
   if (msg.content.trim() === "إيقاف فعاليه") {
-    if (msg.author.id !== ADMIN_ID) return msg.reply("لا توجد فعالية شغالة حاليًا");
-
+    if (msg.author.id !== ADMIN_ID) return;
+    if (!quizRunning) return msg.reply("لا توجد فعالية شغالة حاليًا");
     quizRunning = false;
     msg.reply("تم إيقاف الفعالية");
   }
@@ -295,7 +285,7 @@ async function startQuiz(msg) {
           .setColor("Green")
           .addFields({
             name: "✅ تمت الإجابة",
-            value: `جاوب <@${m.author.id}> وتمت إضافة نقطة `
+            value: `جاوب <@${m.author.id}> وتمت إضافة نقطة 🎉`
           });
 
         await qMessage.edit({ embeds: [winEmbed] });
@@ -360,7 +350,7 @@ cron.schedule("0 0 20 3 *", async () => {
 }, { timezone: "Asia/Riyadh" });
 
 // ---- تشغيل البوت ----
-client.once("clientReady", () => {
+client.once("ready", () => {
   console.log("Ramadan Bot Ready");
 });
 
