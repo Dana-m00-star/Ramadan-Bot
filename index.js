@@ -129,9 +129,12 @@ client.on("interactionCreate", async i => {
   i.reply({ content: "تم تسجيل حضورك ✅", ephemeral: true });
 });
 
-// ---- أوامر المستخدمين ----
+// ---- أوامر المستخدمين فقط في القناة المحددة ----
 client.on("messageCreate", async msg => {
   if (msg.author.bot) return;
+
+  // فقط القناة المحددة
+  if (msg.channel.id !== CHANNEL_ID) return;
 
   const points = loadJSON(pointsPath, {});
   const attendance = loadJSON(attendancePath, {});
@@ -155,8 +158,8 @@ client.on("messageCreate", async msg => {
       .slice(0, 5);
 
     const embed = new EmbedBuilder()
-      .setColor("Green")
-      .setTitle("🏆 توب حضور")
+      .setColor("#DCAE96")
+      .setTitle("⭐️💜 توب حضور")
       .setDescription(
         sorted.length
           ? sorted.map(([id, c], i) => `${i + 1}. <@${id}> — ${c}`).join("\n")
@@ -350,7 +353,7 @@ cron.schedule("0 0 20 3 *", async () => {
 }, { timezone: "Asia/Riyadh" });
 
 // ---- تشغيل البوت ----
-client.once("clientReady", () => {
+client.once("ready", () => {
   console.log("Ramadan Bot Ready");
 });
 
