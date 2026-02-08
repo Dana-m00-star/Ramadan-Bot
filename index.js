@@ -65,6 +65,7 @@ cron.schedule("0 0 18 2 *", async () => {
 cron.schedule("50 22 * * *", async () => {
   if (!isRamadan()) return;
   const ch = await client.channels.fetch(CHANNEL_ID);
+  // رسالة عادية فيها منشن
   ch.send("@everyone باقي 10 دقائق على تحضير التراويح");
 }, { timezone: "Asia/Riyadh" });
 
@@ -83,13 +84,18 @@ cron.schedule("0 23 * * *", async () => {
       .setStyle(ButtonStyle.Success)
   );
 
+  // أرسل منشن عادي أولاً
+  await ch.send("@everyone الوقت بدأ لتسجيل حضور التراويح 🕌");
+
+  // بعدين أرسل Embed مع الزر
   const embed = new EmbedBuilder()
     .setTitle("تحضير التراويح 🕌")
-    .setDescription("@everyone اضغط على زر **حاضر** لتسجيل حضورك خلال 30 دقيقة")
-    .setColor("Blue");
+    .setDescription("اضغط على زر **حاضر** لتسجيل حضورك خلال 30 دقيقة")
+    .setColor("#DCAE96");
 
   const msg = await ch.send({ embeds: [embed], components: [row] });
 
+  // انتهاء الحضور بعد 30 دقيقة
   setTimeout(async () => {
     attendanceOpen = false;
 
@@ -132,8 +138,6 @@ client.on("interactionCreate", async i => {
 // ---- أوامر المستخدمين فقط في القناة المحددة ----
 client.on("messageCreate", async msg => {
   if (msg.author.bot) return;
-
-  // فقط القناة المحددة
   if (msg.channel.id !== CHANNEL_ID) return;
 
   const points = loadJSON(pointsPath, {});
@@ -158,8 +162,8 @@ client.on("messageCreate", async msg => {
       .slice(0, 5);
 
     const embed = new EmbedBuilder()
-      .setColor("#DCAE96")
-      .setTitle("⭐️💜 توب حضور")
+      .setColor("#7F5A58")
+      .setTitle("🌟توب حضور")
       .setDescription(
         sorted.length
           ? sorted.map(([id, c], i) => `${i + 1}. <@${id}> — ${c}`).join("\n")
@@ -206,11 +210,9 @@ client.on("messageCreate", async msg => {
 // ---- دالة بدء الفعالية ----
 async function startQuiz(msg) {
   quizRunning = true;
-
   const points = loadJSON(pointsPath, {});
   const used = loadJSON(usedQPath, []);
   const dailyScores = loadJSON(dailyPointsPath, {});
-
   let available = QUESTIONS.filter((_, i) => !used.includes(i));
 
   if (available.length < 20) {
@@ -222,11 +224,9 @@ async function startQuiz(msg) {
 
   for (let i = 0; i < 20; i++) {
     if (!quizRunning) break;
-
     const qIndex = Math.floor(Math.random() * available.length);
     const question = available[qIndex];
     const realIndex = QUESTIONS.indexOf(question);
-
     used.push(realIndex);
     available.splice(qIndex, 1);
     saveJSON(usedQPath, used);
@@ -237,12 +237,9 @@ async function startQuiz(msg) {
     else if (question.word) questionType = "words";
 
     let displayQ;
-    if (questionType === "words")
-      displayQ = `اول واحد يكتب:\n${question.word}`;
-    else if (questionType === "tf")
-      displayQ = `جاوب بصح أو غلط:\n${question.q}`;
-    else
-      displayQ = question.q;
+    if (questionType === "words") displayQ = `اول واحد يكتب:\n${question.word}`;
+    else if (questionType === "tf") displayQ = `جاوب بصح أو غلط:\n${question.q}`;
+    else displayQ = question.q;
 
     const embed = new EmbedBuilder()
       .setColor("Blue")
@@ -259,7 +256,6 @@ async function startQuiz(msg) {
 
     collector.on("collect", async m => {
       if (!quizRunning) return collector.stop();
-
       const answer = normalize(m.content);
       let correct = false;
 
@@ -277,10 +273,8 @@ async function startQuiz(msg) {
 
       if (correct && !answered) {
         answered = true;
-
         points[m.author.id] = (points[m.author.id] || 0) + 1;
         dailyScores[m.author.id] = (dailyScores[m.author.id] || 0) + 1;
-
         saveJSON(pointsPath, points);
         saveJSON(dailyPointsPath, dailyScores);
 
@@ -292,7 +286,6 @@ async function startQuiz(msg) {
           });
 
         await qMessage.edit({ embeds: [winEmbed] });
-
         collector.stop();
       }
     });
@@ -308,7 +301,6 @@ async function startQuiz(msg) {
                 Array.isArray(question.a) ? question.a.join("، ") : question.a || question.word
               }**`
             });
-
           await qMessage.edit({ embeds: [loseEmbed] });
         }
         resolve();
@@ -353,7 +345,7 @@ cron.schedule("0 0 20 3 *", async () => {
 }, { timezone: "Asia/Riyadh" });
 
 // ---- تشغيل البوت ----
-client.once("clientReady", () => {
+client.once("ready", () => {
   console.log("Ramadan Bot Ready");
 });
 
