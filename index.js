@@ -19,7 +19,7 @@ const CHANNEL_ID = process.env.CHANNEL_ID;
 const ADMIN_ID = "1406429112502976556";
 
 // تواريخ رمضان
-const RAMADAN_START = new Date("2026-02-18");
+const RAMADAN_START = new Date("2026-02-17");
 const RAMADAN_END = new Date("2026-03-20");
 
 // مسارات الملفات
@@ -56,7 +56,7 @@ function getRamadanDay() {
 }
 
 // ---- كرون: رسالة أول يوم رمضان ----
-cron.schedule("0 0 18 2 *", async () => {
+cron.schedule("0 20 17 2 *", async () => {
   const ch = await client.channels.fetch(CHANNEL_ID);
   ch.send("@everyone 💚 رمضان كريم ومبارك عليكم الشهر حبايبي");
 }, { timezone: "Asia/Riyadh" });
